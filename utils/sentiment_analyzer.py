@@ -188,7 +188,6 @@ sp_headlines.to_csv('sp_500_headlines.csv', index=False)
 from google.colab import files
 files.download('sp_500_headlines.csv')
 
-"""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"""
 
 import pandas as pd
 from google.colab import files
