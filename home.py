@@ -1,11 +1,18 @@
 import streamlit as st
-import pandas as pd
-from utils.dummy_classifier import train_classifier, classify_ticker
-
 st.set_page_config(page_title="Home", layout="wide")
-st.title("Value Investing Dashboard")
 
-clf, scaler, sp500_metrics = train_classifier() # assume this works
+import pandas as pd
+from utils.stock_value_classifier import get_trained_model, classify_ticker
+
+# cache the model loading to avoid reloading it every time
+@st.cache_resource
+def load_model():
+    return get_trained_model()
+
+clf, scaler, sp500_metrics = load_model()
+
+
+st.title("Value Investing Dashboard")
 
 # set up the layout
 col1, col2 = st.columns([1, 1])
