@@ -1,0 +1,12 @@
+# adds co
+[theme]
+primaryColor="#00B0F0"
+backgroundColor="#0E1117"
+secondaryBackgroundColor="#262730"
+textColor="#FAFAFA"
+font="sans serif"
+
+[server]
+headless = true
+port = 8501
+enableCORS = false
