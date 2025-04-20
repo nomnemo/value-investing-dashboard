@@ -6,5 +6,8 @@
 2. Activate the virtual environment
   ` source .venv/bin/activate`
 
-4. Install the requirements
+3. Install the requirements
    `pip install -r requirements.txt`
+
+4. Run
+   `streamlit run Home.py`
