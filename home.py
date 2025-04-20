@@ -20,7 +20,7 @@ col1, col2 = st.columns([1, 1])
 # COLUMN 1: S&P 500 Stocks Snapshot
 # TODO: replace samhita's code to get the S&P 500 stocks list, maybe get it paginated?
 with col1:
-    st.subheader("S&P 500 Stocks Snapshot price of today ?")
+    st.subheader("S&P 500 Stocks metrics today")
     st.dataframe(sp500_metrics[['Ticker', 'P/E Ratio', 'P/B Ratio', 'P/S Ratio']])
 
 #COLUMN 2: User Input to classify a stock ticker as overvalued, undervalued, or neutral
