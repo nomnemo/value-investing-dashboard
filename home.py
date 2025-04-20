@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from utils.dummy_classifier import train_classifier, classify_ticker
 
-st.set_page_config(layout="wide")
+st.set_page_config(page_title="Home", layout="wide")
 st.title("Value Investing Dashboard")
 
 clf, scaler, sp500_metrics = train_classifier() # assume this works
