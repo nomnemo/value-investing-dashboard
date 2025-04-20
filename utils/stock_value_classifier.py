@@ -10,7 +10,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import confusion_matrix, classification_report
 
 
-"""# Random Forest Classifier
+"""# Random Forest Classifier for Stock Value Classification
 
 ### Metrics:
 
@@ -20,7 +20,8 @@ from sklearn.metrics import confusion_matrix, classification_report
 4. Sentiment score
 """
 
-def create_metrics():
+# This function creates a DataFrame with the P/E, P/B, and P/S ratios for all S&P 500 stocks
+def get_sp500_metrics():
   # Extract all S&P500 stocks
   metrics = pd.DataFrame()
   sp500 = pd.read_html('https://en.wikipedia.org/wiki/List_of_S%26P_500_companies')[0]['Symbol']
@@ -38,10 +39,9 @@ def create_metrics():
     if 'priceToSalesTrailing12Months' in ticker_info.info:
       metrics.loc[i, 'P/S Ratio'] = ticker_info.info['priceToSalesTrailing12Months']
 
-    # Drop stocks with at least one N/A for any of the ratios
-    metrics.dropna(inplace=True)
-    metrics = metrics.reset_index(drop=True)
-
+  # Drop stocks with at least one N/A for any of the ratios
+  metrics.dropna(inplace=True)
+  metrics = metrics.reset_index(drop=True)
   return metrics
 
 def assign_points(df):
@@ -79,12 +79,8 @@ def classify_stocks(df):
 
   return df
 
-metrics = create_metrics()
-metrics = assign_points(metrics)
-metrics = classify_stocks(metrics)
-metrics.head()
-
-def run_random_forest(X, y):
+## This function was useless
+def train_classifier(X, y):
   # Split the dataset into training and testing
   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
@@ -104,6 +100,7 @@ def run_random_forest(X, y):
 
   return y_test, predictions
 
+## useless
 def create_confusion_matrix(y_test, predictions):
   # Get a confusion matrix
   print("Confusion Matrix:\n")
@@ -114,13 +111,46 @@ def create_confusion_matrix(y_test, predictions):
   sns.heatmap(confusion_matrix_df, annot=True, fmt=".2f", cmap="Reds")
   plt.show()
 
-# Get the X and y datasets
-X = metrics.drop(['Ticker', 'Overvalued Points', 'Undervalued Points', 'Value'], axis=1)
-y = metrics['Value']
+##############################
+## API functions
+#################################
 
-y_test, predictions = run_random_forest(X, y)
-get_confusion_matrix(y_test, predictions)
+## This function gets the trained model and scaler
+## and the S&P 500 metrics DataFrame
+def get_trained_model():
+    sp500_metrics = get_sp500_metrics()
+    sp500_metrics = assign_points(sp500_metrics)
+    sp500_metrics = classify_stocks(sp500_metrics)
+    
+    X = sp500_metrics.drop(['Ticker', 'Overvalued Points', 'Undervalued Points', 'Value'], axis=1)
+    y = sp500_metrics['Value']
+    
+    clf = RandomForestClassifier(n_estimators=100, random_state=42)
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    clf.fit(X_scaled, y)
 
-# Get the classification report
-print("Classification Report:\n")
-print(classification_report(y_test, predictions))
+    return clf, scaler, sp500_metrics
+  
+## Given a ticker, this function classifies it as overvalued, undervalued, or neutral
+## and returns the P/E, P/B, and P/S ratios
+def classify_ticker(ticker, clf, scaler):
+  info = yf.Ticker(ticker).info
+
+  try:
+      pe = info['trailingPE']
+      pb = info['priceToBook']
+      ps = info['priceToSalesTrailing12Months']
+  except:
+      return None, "Missing ratio(s)"
+
+  # Format like training input
+  features = [[pe, pb, ps]]
+  features_scaled = scaler.transform(features)
+  prediction = clf.predict(features_scaled)[0]
+
+  return prediction, {
+      "P/E": round(pe, 2),
+      "P/B": round(pb, 2),
+      "P/S": round(ps, 2)
+  }
