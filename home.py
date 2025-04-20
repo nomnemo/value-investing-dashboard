@@ -1,15 +1,25 @@
 import streamlit as st
 st.set_page_config(page_title="Home", layout="wide")
-
 import pandas as pd
-from utils.stock_value_classifier import get_trained_model, classify_ticker
 
-# cache the model loading to avoid reloading it every time
+from utils.stock_value_classifier import get_trained_model, classify_ticker
+from utils.sentiment_analyzer import (
+    get_news_headlines_for_ticker,
+    get_sentiment_score_from_headlines
+)
+
+# 1. Caches the heavy computation
 @st.cache_resource
-def load_model():
+def get_model():
     return get_trained_model()
 
-clf, scaler, sp500_metrics = load_model()
+# 2. Wraps it in a visible spinner
+def load_model_with_spinner():
+    with st.spinner("📡 Fetching financial data from Yahoo... please hold the line 📞"):
+        return get_model()
+
+# Load
+clf, scaler, sp500_metrics = load_model_with_spinner()
 
 ## TITLE
 st.title("Value Investing Dashboard")
@@ -66,7 +76,7 @@ with col2:
         ## Display the P/E, P/B, and P/S ratios 
         st.subheader("📊 Fundamental Ratios")
 
-        tabs = st.tabs(["📈 P/E Ratio", "📘 P/B Ratio", "💵 P/S Ratio"])
+        tabs = st.tabs(["📈 P/E Ratio", "📘 P/B Ratio", "💵 P/S Ratio", "📰 Sentiment"])
 
         # --- P/E Ratio Tab ---
         with tabs[0]:
@@ -75,6 +85,7 @@ with col2:
             st.latex(r"\text{P/E Ratio} = \frac{\text{Market Price per Share}}{\text{Earnings per Share (EPS)}}")
             st.markdown("#### 💡 Interpretation")
             st.markdown(
+                "- The P/E ratio tells you how much investors are willing to pay today for \$1 of earnings.\n"
                 "- A **high P/E** may indicate overvaluation or strong growth expectations.\n"
                 "- A **low P/E** may indicate undervaluation or financial concerns."
             )
@@ -86,6 +97,7 @@ with col2:
             st.latex(r"\text{P/B Ratio} = \frac{\text{Market Price per Share}}{\text{Book Value per Share}}")
             st.markdown("#### 💡 Interpretation")
             st.markdown(
+                "- The P/B ratio compares the stock price to the company's net assets (what it's worth on paper).\n"
                 "- A **high P/B** may suggest overvaluation or investor optimism.\n"
                 "- A **low P/B** could suggest undervaluation or distress."
             )
@@ -97,6 +109,22 @@ with col2:
             st.latex(r"\text{P/S Ratio} = \frac{\text{Market Price per Share}}{\text{Revenue per Share}}")
             st.markdown("#### 💡 Interpretation")
             st.markdown(
+                "- The P/S ratio shows how much investors are paying for each dollar of a company’s sales.\n"
                 "- A **high P/S** ratio may mean the stock is expensive relative to sales.\n"
                 "- A **low P/S** ratio may indicate undervaluation."
             )
+        with tabs[3]:
+
+            # Get Yahoo Finance headlines for the ticker
+            headlines = get_news_headlines_for_ticker(ticker_input.upper())
+
+            if headlines:
+                # Compute sentiment score from headlines
+                sentiment_score = get_sentiment_score_from_headlines(headlines)
+
+                st.metric("🧠 Sentiment Score", sentiment_score)
+
+                st.markdown("#### 🗞 News Headlines Used for Sentiment")
+                st.dataframe(pd.DataFrame({'Headline': headlines}))
+            else:
+                st.warning("No news headlines found for this ticker.")
