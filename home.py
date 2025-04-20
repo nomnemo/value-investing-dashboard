@@ -11,10 +11,10 @@ def load_model():
 
 clf, scaler, sp500_metrics = load_model()
 
-
+## TITLE
 st.title("Value Investing Dashboard")
 
-# set up the layout
+# LAYOUT
 col1, col2 = st.columns([1, 1])
 
 # COLUMN 1: S&P 500 Stocks Snapshot
@@ -71,8 +71,8 @@ with col2:
         # --- P/E Ratio Tab ---
         with tabs[0]:
             st.metric("P/E Ratio", result.get("P/E", "N/A"))
-            st.markdown("#### 📌 Formula")
-            st.markdown("**P/E Ratio = Market Price per Share / Earnings per Share (EPS)**")
+            st.subheader("📌 Formula")
+            st.latex(r"\text{P/E Ratio} = \frac{\text{Market Price per Share}}{\text{Earnings per Share (EPS)}}")
             st.markdown("#### 💡 Interpretation")
             st.markdown(
                 "- A **high P/E** may indicate overvaluation or strong growth expectations.\n"
@@ -83,7 +83,7 @@ with col2:
         with tabs[1]:
             st.metric("P/B Ratio", result.get("P/B", "N/A"))
             st.markdown("#### 📌 Formula")
-            st.markdown("**P/B Ratio = Market Price per Share / Book Value per Share**")
+            st.latex(r"\text{P/B Ratio} = \frac{\text{Market Price per Share}}{\text{Book Value per Share}}")
             st.markdown("#### 💡 Interpretation")
             st.markdown(
                 "- A **high P/B** may suggest overvaluation or investor optimism.\n"
@@ -94,7 +94,7 @@ with col2:
         with tabs[2]:
             st.metric("P/S Ratio", result.get("P/S", "N/A"))
             st.markdown("#### 📌 Formula")
-            st.markdown("**P/S Ratio = Market Price per Share / Revenue per Share**")
+            st.latex(r"\text{P/S Ratio} = \frac{\text{Market Price per Share}}{\text{Revenue per Share}}")
             st.markdown("#### 💡 Interpretation")
             st.markdown(
                 "- A **high P/S** ratio may mean the stock is expensive relative to sales.\n"
