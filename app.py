@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from utils.stock_value_classifier import train_classifier, classify_ticker
+from utils.dummy_classifier import train_classifier, classify_ticker
+
 
 st.set_page_config(layout="wide")
 st.title("Value Investing Dashboard")
