@@ -128,3 +128,27 @@ with col2:
                 st.dataframe(pd.DataFrame({'Headline': headlines}))
             else:
                 st.warning("No news headlines found for this ticker.")
+
+st.divider()
+st.subheader("Top 5 Stock Picks")
+
+if st.button("Generate Rankings"):
+    with st.spinner("Fetching stock data..."):
+        from utils.stock_value_classifier import assign_points, classify_stocks
+
+        df = assign_points(sp500_metrics.copy())
+        df = classify_stocks(df)
+
+        top_undervalued = df[df["Value"] == "Undervalued"].sort_values(by="Undervalued Points", ascending=False).head(5)
+        top_overvalued = df[df["Value"] == "Overvalued"].sort_values(by="Overvalued Points", ascending=False).head(5)
+
+        top_undervalued = top_undervalued.rename(columns={"Value": "Classification"})
+        top_overvalued = top_overvalued.rename(columns={"Value": "Classification"})
+
+        st.markdown("###Top 5 Undervalued Stocks")
+        st.dataframe(top_undervalued.set_index("Ticker"), use_container_width=True)
+        st.caption("These stocks are currently undervalued")
+
+        st.markdown("###Top 5 Overvalued Stocks")
+        st.dataframe(top_overvalued.set_index("Ticker"), use_container_width=True)
+        st.caption("These stocks are currently overvalued")
