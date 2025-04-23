@@ -176,3 +176,9 @@ if st.button("Generate Rankings"):
         )
 
         st.caption("These stocks are currently overvalued")
+
+        with st.expander("What does the Percentile Score mean?"):
+            st.markdown(
+                "The **percentile score** shows how a stock ranks among others in the same category:\n\n"
+                " Example: A score of **0.98** → top 2% of stocks in that group."
+            )
