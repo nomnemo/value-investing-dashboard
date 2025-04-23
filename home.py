@@ -129,26 +129,50 @@ with col2:
             else:
                 st.warning("No news headlines found for this ticker.")
 
+
+
+import streamlit as st
+from utils.stock_value_classifier import assign_points, classify_stocks
+
+from utils.stock_value_classifier import assign_points, classify_stocks
+
 st.divider()
 st.subheader("Top 5 Stock Picks")
 
 if st.button("Generate Rankings"):
     with st.spinner("Fetching stock data..."):
-        from utils.stock_value_classifier import assign_points, classify_stocks
-
         df = assign_points(sp500_metrics.copy())
         df = classify_stocks(df)
 
+        # Compute category-based percentiles
+        def assign_category_percentile(df, group_col, score_col, new_col):
+            df[new_col] = None
+            for label in df[group_col].unique():
+                group = df[df[group_col] == label]
+                df.loc[group.index, new_col] = group[score_col].rank(pct=True, method="first")
+            return df
+
+        df = assign_category_percentile(df, "Value", "Undervalued Points", "Undervalued Percentile")
+        df = assign_category_percentile(df, "Value", "Overvalued Points", "Overvalued Percentile")
+
+        # Filter and display
         top_undervalued = df[df["Value"] == "Undervalued"].sort_values(by="Undervalued Points", ascending=False).head(5)
         top_overvalued = df[df["Value"] == "Overvalued"].sort_values(by="Overvalued Points", ascending=False).head(5)
 
-        top_undervalued = top_undervalued.rename(columns={"Value": "Classification"})
-        top_overvalued = top_overvalued.rename(columns={"Value": "Classification"})
+        st.markdown("Top 5 Undervalued Stocks")
+        st.dataframe(
+            top_undervalued.drop(columns=["Overvalued Points", "Undervalued Points", "Value", "Overvalued Percentile"])
+            .set_index("Ticker"),
+            use_container_width=True
+        )
 
-        st.markdown("###Top 5 Undervalued Stocks")
-        st.dataframe(top_undervalued.set_index("Ticker"), use_container_width=True)
         st.caption("These stocks are currently undervalued")
 
-        st.markdown("###Top 5 Overvalued Stocks")
-        st.dataframe(top_overvalued.set_index("Ticker"), use_container_width=True)
+        st.markdown("Top 5 Overvalued Stocks")
+        st.dataframe(
+            top_overvalued.drop(columns=["Overvalued Points", "Undervalued Points", "Value", "Undervalued Percentile"])
+            .set_index("Ticker"),
+            use_container_width=True
+        )
+
         st.caption("These stocks are currently overvalued")
