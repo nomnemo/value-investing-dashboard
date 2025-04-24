@@ -1,5 +1,7 @@
 # value-investing-dashboard
 
+Developer start routine:
+
 1. Create a Python virtual environment
   `python3 -m venv .venv`
 
