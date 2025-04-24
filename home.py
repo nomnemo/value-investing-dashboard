@@ -147,7 +147,7 @@ from utils.stock_value_classifier import assign_points, classify_stocks
 from utils.stock_value_classifier import assign_points, classify_stocks
 
 st.divider()
-st.subheader("Top 5 Stock Picks")
+st.subheader("🏆 Top 5 Stock Picks")
 
 if st.button("Generate Rankings"):
     with st.spinner("Fetching stock data..."):
