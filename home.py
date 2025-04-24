@@ -71,11 +71,18 @@ with col2:
         else: 
             # try to pull the pe, ps, and pb ratios from the ticker from Yahoo Finance
             # if it fails, show an error message
-            info = yf.Ticker(ticker_upper).info
-            pe, pb, ps = info.get('trailingPE'), info.get('priceToBook'), info.get('priceToSalesTrailing12Months')
+            
+            try:
+                info = yf.Ticker(ticker_upper).info
+                pe = info.get('trailingPE')
+                pb = info.get('priceToBook')
+                ps = info.get('priceToSalesTrailing12Months')
+            except Exception as e:
+                st.error("Failed to fetch data for this ticker. Please enter a valid stock symbol.")
+                st.stop()
 
         if None in [pe, pb, ps]:
-            st.error("Could not retrieve all ratios from Yahoo. Please check the ticker symbol and try again.")
+            st.error("Could not retrieve all ratios from Yahoo Finance. Please check the ticker symbol and try again.")
             st.stop()
         
         ## Get the sentiment score and headlines for the ticker
@@ -142,8 +149,6 @@ with col2:
 
 
 import streamlit as st
-from utils.stock_value_classifier import assign_points, classify_stocks
-
 from utils.stock_value_classifier import assign_points, classify_stocks
 
 st.divider()
