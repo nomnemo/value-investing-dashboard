@@ -1,12 +1,11 @@
 import streamlit as st
 st.set_page_config(page_title="Home", layout="wide")
-import pandas as pd
 
-from utils.stock_value_classifier import get_trained_model, classify_ticker
-from utils.sentiment_analyzer import (
-    get_news_headlines_for_ticker,
-    get_sentiment_score_from_headlines
-)
+import pandas as pd
+import yfinance as yf # type: ignore
+
+from utils.stock_value_classifier import classify_ratios, get_trained_model
+from utils.sentiment_analyzer import analyze_sentiment_for_ticker
 
 # 1. Caches the heavy computation
 @st.cache_resource
@@ -54,22 +53,43 @@ with col2:
         if ticker_input == "": 
             st.error("Please enter a ticker symbol.")
             st.stop()
+        
+        ticker_upper = ticker_input.upper()
+        label = None
+        result = None
+        
+        pe = None
+        ps = None
+        pb = None
+        sentiment_score = 0
+        headlines = []
             
-        ## If the ticker is invalid, i.e, not in the S&P 500 list, show an error message
-        if ticker_input.upper() not in sp500_metrics['Ticker'].values:
-            st.error("Ticker not found in S&P 500. Please enter a valid ticker.")
+        if  ticker_upper in sp500_metrics['Ticker'].values:
+            pe = sp500_metrics.loc[sp500_metrics['Ticker'] == ticker_upper, 'P/E Ratio'].values[0]
+            pb = sp500_metrics.loc[sp500_metrics['Ticker'] == ticker_upper, 'P/B Ratio'].values[0]
+            ps = sp500_metrics.loc[sp500_metrics['Ticker'] == ticker_upper, 'P/S Ratio'].values[0]
+        else: 
+            # try to pull the pe, ps, and pb ratios from the ticker from Yahoo Finance
+            # if it fails, show an error message
+            info = yf.Ticker(ticker_upper).info
+            pe, pb, ps = info.get('trailingPE'), info.get('priceToBook'), info.get('priceToSalesTrailing12Months')
+
+        if None in [pe, pb, ps]:
+            st.error("Could not retrieve all ratios from Yahoo. Please check the ticker symbol and try again.")
             st.stop()
         
-        ### VALID TICKER HANDLING:
-        label, result = classify_ticker(ticker_input.upper(), clf, scaler)
+        ## Get the sentiment score and headlines for the ticker
+        sentiment_score, headlines = analyze_sentiment_for_ticker(ticker_upper)
+        label, result = classify_ratios(pe, pb, ps, sentiment_score, clf, scaler)
+        
         
         ## Display the classification result
         if label == "Undervalued": ## green
-            st.success(f"**{ticker_input.upper()} is classified as {label}**")
+            st.success(f"**{ticker_upper} is classified as {label}**")
         elif label == "Overvalued": ## red
-            st.warning(f"**{ticker_input.upper()} is classified as {label}**")
+            st.warning(f"**{ticker_upper} is classified as {label}**")
         elif label == "Neutral": ## neutral
-            st.info(f"**{ticker_input.upper()} is classified as {label}**")
+            st.info(f"**{ticker_upper} is classified as {label}**")
         else: ##
             st.error("Could not classify — missing data for this ticker.")
 
@@ -82,7 +102,7 @@ with col2:
         with tabs[0]:
             st.metric("P/E Ratio", result.get("P/E", "N/A"))
             st.subheader("📌 Formula")
-            st.latex(r"\text{P/E Ratio} = \frac{\text{Market Price per Share}}{\text{Earnings per Share (EPS)}}")
+            st.markdown(r"- The P/E ratio tells you how much investors are willing to pay today for \$1 of earnings.")
             st.markdown("#### 💡 Interpretation")
             st.markdown(
                 "- The P/E ratio tells you how much investors are willing to pay today for \$1 of earnings.\n"
@@ -114,20 +134,10 @@ with col2:
                 "- A **low P/S** ratio may indicate undervaluation."
             )
         with tabs[3]:
+            st.metric("🧠 Sentiment Score", sentiment_score)
 
-            # Get Yahoo Finance headlines for the ticker
-            headlines = get_news_headlines_for_ticker(ticker_input.upper())
-
-            if headlines:
-                # Compute sentiment score from headlines
-                sentiment_score = get_sentiment_score_from_headlines(headlines)
-
-                st.metric("🧠 Sentiment Score", sentiment_score)
-
-                st.markdown("#### 🗞 News Headlines Used for Sentiment")
-                st.dataframe(pd.DataFrame({'Headline': headlines}))
-            else:
-                st.warning("No news headlines found for this ticker.")
+            st.markdown("#### 🗞 News Headlines Used for Sentiment")
+            st.dataframe(pd.DataFrame({'Headline': headlines}))
 
 
 

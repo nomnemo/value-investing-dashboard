@@ -1,3 +1,4 @@
+from utils.sentiment_analyzer import run_sentiment_analysis
 import yfinance as yf
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -116,42 +117,48 @@ def create_confusion_matrix(y_test, predictions):
 ## API functions
 #################################
 
-## This function gets the trained model and scaler
+## This function returns the trained model and scaler
 ## and the S&P 500 metrics DataFrame
 def get_trained_model():
-    sp500_metrics = get_sp500_metrics()
-    sp500_metrics = assign_points(sp500_metrics)
-    sp500_metrics = classify_stocks(sp500_metrics)
-    
-    X = sp500_metrics.drop(['Ticker', 'Overvalued Points', 'Undervalued Points', 'Value'], axis=1)
-    y = sp500_metrics['Value']
-    
-    clf = RandomForestClassifier(n_estimators=100, random_state=42)
+    # Get labeled data
+    metrics = get_sp500_metrics()
+    metrics = assign_points(metrics)
+    metrics = classify_stocks(metrics)
+
+    # Step 1: Run sentiment analysis for tickers in the cleaned metrics
+    ticker_subset = metrics['Ticker'].tolist()
+    avg_sentiment = run_sentiment_analysis(ticker_subset)
+
+    # Step 2: Merge sentiment scores into metrics
+    metrics = metrics.merge(avg_sentiment, how='left', left_on='Ticker', right_index=True)
+    metrics.dropna(subset=['sentiment values'], inplace=True)
+
+    # Step 3: Extract features and labels
+    X = metrics[['P/E Ratio', 'P/B Ratio', 'P/S Ratio', 'sentiment values']]
+    y = metrics['Value']
+
+    # Step 4: Scale and train
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
+
+    clf = RandomForestClassifier(n_estimators=100, random_state=42)
     clf.fit(X_scaled, y)
 
-    return clf, scaler, sp500_metrics
+    return clf, scaler, metrics
   
 ## Given a ticker, this function classifies it as overvalued, undervalued, or neutral
 ## and returns the P/E, P/B, and P/S ratios
-def classify_ticker(ticker, clf, scaler):
-  info = yf.Ticker(ticker).info
+def classify_ratios(pe, pb, ps, sentiment, clf, scaler):
+    if any(v is None for v in [pe, pb, ps, sentiment]):
+        return None, "Missing input value(s)"
 
-  try:
-      pe = info['trailingPE']
-      pb = info['priceToBook']
-      ps = info['priceToSalesTrailing12Months']
-  except:
-      return None, "Missing ratio(s)"
+    features = [[pe, pb, ps, sentiment]]
+    features_scaled = scaler.transform(features)
+    prediction = clf.predict(features_scaled)[0]
 
-  # Format like training input
-  features = [[pe, pb, ps]]
-  features_scaled = scaler.transform(features)
-  prediction = clf.predict(features_scaled)[0]
-
-  return prediction, {
-      "P/E": round(pe, 2),
-      "P/B": round(pb, 2),
-      "P/S": round(ps, 2)
-  }
+    return prediction, {
+        "P/E": round(pe, 2),
+        "P/B": round(pb, 2),
+        "P/S": round(ps, 2),
+        "Sentiment": round(sentiment, 3)
+    }
