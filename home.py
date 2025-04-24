@@ -21,7 +21,7 @@ def load_model_with_spinner():
 clf, scaler, sp500_metrics = load_model_with_spinner()
 
 ## TITLE
-st.title("Value Investing Dashboard")
+st.title("Value Investing Dashboard ")
 
 # LAYOUT
 col1, col2 = st.columns([1, 1])

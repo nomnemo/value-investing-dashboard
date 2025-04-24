@@ -47,39 +47,50 @@ def get_sp500_metrics():
   return metrics
 
 def assign_points(df):
-  # Assign points based on whether the ratios are high or low
-  df['Overvalued Points'] = 0
-  df['Undervalued Points'] = 0
+    # Initialize the columns
+    df['Overvalued Points'] = 0
+    df['Undervalued Points'] = 0
 
-  # P/E ratio gets 3 points (most important), P/B: 2 points, P/S: 1 point
-  for i in range(len(df)):
-    if df.loc[i, 'P/E Ratio'] > 30:
-      df.loc[i, 'Overvalued Points'] += 3
-    if df.loc[i, 'P/B Ratio'] > 2:
-      df.loc[i, 'Overvalued Points'] += 2
-    if df.loc[i, 'P/S Ratio'] > 3:
-      df.loc[i, 'Overvalued Points'] += 1
+    # Safely loop over rows using iterrows
+    for idx, row in df.iterrows():
+        ov = 0
+        uv = 0
 
-    if df.loc[i, 'P/E Ratio'] < 20:
-      df.loc[i, 'Undervalued Points'] += 3
-    if df.loc[i, 'P/B Ratio'] < 1:
-      df.loc[i, 'Undervalued Points'] += 2
-    if df.loc[i, 'P/S Ratio'] < 1:
-      df.loc[i, 'Undervalued Points'] += 1
+        # Overvalued points
+        if row['P/E Ratio'] > 30:
+            ov += 3
+        if row['P/B Ratio'] > 2:
+            ov += 2
+        if row['P/S Ratio'] > 3:
+            ov += 1
 
-  return df
+        # Undervalued points
+        if row['P/E Ratio'] < 20:
+            uv += 3
+        if row['P/B Ratio'] < 1:
+            uv += 2
+        if row['P/S Ratio'] < 1:
+            uv += 1
+
+        # Assign the computed values
+        df.at[idx, 'Overvalued Points'] = ov
+        df.at[idx, 'Undervalued Points'] = uv
+
+    return df
 
 def classify_stocks(df):
-  # Classify stocks as overvalued or undervalued based on their points
-  for i in range(len(df)):
-    if df.loc[i, 'Overvalued Points'] >= 3:
-      df.loc[i, "Value"] = "Overvalued"
-    elif df.loc[i, 'Undervalued Points'] >= 3:
-      df.loc[i, "Value"] = "Undervalued"
-    else:
-      df.loc[i, "Value"] = "Neutral"
+    # Initialize the 'Value' column
+    df['Value'] = "Neutral"  # default classification
 
-  return df
+    # Loop over rows using iterrows to safely access by index
+    for idx, row in df.iterrows():
+        if row['Overvalued Points'] >= 3:
+            df.at[idx, "Value"] = "Overvalued"
+        elif row['Undervalued Points'] >= 3:
+            df.at[idx, "Value"] = "Undervalued"
+        # else stays as Neutral
+
+    return df
 
 ## This function was useless
 def train_classifier(X, y):
